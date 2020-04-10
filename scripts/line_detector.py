@@ -79,8 +79,6 @@ for line in lines:
     print
     cv2.line(img, (x1, y1), (x2, y2), (0, 0, 128), 10)
 
-print isOnLine((width/2, height/2), lines)
-
 center_x, center_y = findCenter(lines)
 closest_x, closest_y = getClosestPointOnLine(center, lines)
 
