@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import itertools
+
 
 DISTANCE_TO_LINE_CONST = 3
 
@@ -56,39 +58,66 @@ def getClosestPointOnLine(cur_pos, lines):
     nx = ((x3 - x1) * dx + (y3 - y1) * dy) / d2
     return (dx * nx + x1, dy * nx + y1)
 
+def getLines(result):
+    edges = cv2.Canny(result, 140, 150)
+    return cv2.HoughLinesP(edges, 1, np.pi / 180, 50, maxLineGap=5)
 
-img = cv2.imread("images/line.jpeg")
+def drawLines(lines, color):
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        print
+        cv2.line(img, (x1, y1), (x2, y2), color, 5)
+
+img = cv2.imread("images/double_line.jpeg")
 height, width, channels = img.shape
 center = (width/2, height/2)
 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-lower_blue = np.array([30, 50, 60])
-upper_blue = np.array([255, 255, 255])
+
+# ========== Blue Mask ===========================
+lower_blue = np.array([30, 150, 60])
+upper_blue = np.array([255, 255, 190])
 # preparing the mask to overlay
-mask = cv2.inRange(hsv, lower_blue, upper_blue)
+mask_blue = cv2.inRange(hsv, lower_blue, upper_blue)
 # The black region in the mask has the value of 0,
 # so when multiplied with original image removes all non-blue regions
-result = cv2.bitwise_and(img, img, mask=mask)
+result_blue = cv2.bitwise_and(img, img, mask=mask_blue)
+
+# ========== Red Mask ===========================
+lower_red = np.array([0, 150, 150])
+upper_red = np.array([10, 255, 255])
+# preparing the mask to overlay
+mask_red = cv2.inRange(hsv, lower_red, upper_red)
+# The black region in the mask has the value of 0,
+# so when multiplied with original image removes all non-blue regions0
+result_red = cv2.bitwise_and(img, img, mask=mask_red)
+
+# Get the lines
+blue_lines = getLines(result_blue)
+red_lines = getLines(result_red)
+print blue_lines
+print red_lines
+
+# Draw lines on image
+drawLines(blue_lines, (128, 0, 0))
+drawLines(red_lines, (50, 20, 100))
 
 
+center_x, center_y = findCenter(red_lines)
+closest_x, closest_y = getClosestPointOnLine(center, red_lines)
 
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-edges = cv2.Canny(result, 140, 150)
-lines = cv2.HoughLinesP(edges, 1, np.pi/180, 50, maxLineGap=10)
-for line in lines:
-    x1, y1, x2, y2 = line[0]
-    print
-    cv2.line(img, (x1, y1), (x2, y2), (0, 0, 128), 10)
+center_x_blue, center_y_blue = findCenter(blue_lines)
+closest_x_blue, closest_y_blue = getClosestPointOnLine(center, blue_lines)
 
-center_x, center_y = findCenter(lines)
-closest_x, closest_y = getClosestPointOnLine(center, lines)
-
-cv2.circle(img, (center_x, center_y), 6, [0, 0, 255], 6)
+cv2.circle(img, (center_x, center_y), 6, [255, 0, 255], 6)
 cv2.circle(img, (closest_x, closest_y), 6, [0, 255, 255], 6)
+
+cv2.circle(img, (center_x_blue, center_y_blue), 6, [255, 0, 255], 6)
+cv2.circle(img, (closest_x_blue, closest_y_blue), 6, [0, 255, 255], 6)
 
 cv2.imshow("linesEdges", img)
 
 # cv2.imshow('frame', img)
-# cv2.imshow('mask', mask)
+#cv2.imshow('mask', mask_red)
 # cv2.imshow('result', result)
 
 cv2.waitKey(0)
