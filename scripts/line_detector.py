@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 
 DISTANCE_TO_LINE_CONST = 3
 LOWER_BLUE = np.array([80, 0, 0])
@@ -11,6 +12,9 @@ UPPER_RED_2 = np.array([20, 255, 190])
 
 
 def find_center(lines):
+    if lines is None:
+        return [0, 0]
+
     center_x = 0
     center_y = 0
 
@@ -22,7 +26,7 @@ def find_center(lines):
     center_x = center_x / (2 * len(lines))
     center_y = center_y / (2 * len(lines))
 
-    return center_x, center_y
+    return [center_x, center_y]
 
 
 def is_on_line(cur_pos, lines):
@@ -42,9 +46,17 @@ def get_distance_to_line(cur_pos, line):
     d = np.linalg.norm(np.cross(p2 - p1, p1 - p3)) / np.linalg.norm(p2 - p1)
     return d
 
-# def getAverageAngle(lines):
-#     for line in lines:
-#
+
+def get_average_angle(lines):
+    if lines is None:
+        return 0
+    angleSum = 0
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        angle = math.atan2(y1-y2, x2-x1)
+        angleSum += angle
+
+    return angleSum/len(lines)
 
 
 def get_closest_line(cur_pos, lines):
@@ -185,16 +197,22 @@ while video.isOpened():
         line_detector.update_image(img)
         center = line_detector.get_center()
         vector = line_detector.get_online_vector()
+
         print center
         print vector
         redLines = get_lines(line_detector.result_red)
         blueLines = get_lines(line_detector.result_blue)
-        draw_lines(redLines, [255, 0, 255])
-        draw_lines(blueLines, [255, 0, 255])
+        #draw_lines(redLines, [255, 0, 255])
+        #raw_lines(blueLines, [255, 0, 255])
 
-        cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in vector])), [255, 0, 255], 3)
-        cv2.circle(img, tuple(line_detector.get_red_center()), 3, [255, 0, 255], 3)
-        cv2.circle(img, tuple(line_detector.get_blue_center()), 3, [255, 0, 255], 3)
+        angle = get_average_angle(redLines)
+        angle_vector = [20 * math.cos(angle), 20 * math.sin(angle)]
+
+        cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in angle_vector])), [255, 80, 255], 3)
+        # cv2.circle(img, tuple(line_detector.get_red_center()), 3, [255, 0, 255], 3)
+        # cv2.circle(img, tuple(line_detector.get_blue_center()), 3, [255, 0, 255], 3)
+        #cv2.circle(img, tuple(find_center(redLines)), 3, [255, 0, 255], 3)
+        cv2.circle(img, tuple(find_center(blueLines)), 3, [255, 0, 255], 3)
         cv2.imshow('blue', line_detector.mask_blue)
         cv2.imshow('red', line_detector.mask_red)
         cv2.imshow('frame', img)
