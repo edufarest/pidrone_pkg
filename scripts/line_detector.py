@@ -4,8 +4,8 @@ import numpy as np
 DISTANCE_TO_LINE_CONST = 3
 LOWER_BLUE = np.array([30, 150, 60])
 UPPER_BLUE = np.array([255, 255, 190])
-LOWER_RED = np.array([0, 150, 150])
-UPPER_RED = np.array([10, 255, 255])
+LOWER_RED = np.array([170, 50, 50])
+UPPER_RED = np.array([180, 255, 190])
 
 
 def find_center(lines):
@@ -149,18 +149,18 @@ class LineDetector:
 
 
 
-img = cv2.imread("images/double_line.jpeg")
-height, width, channels = img.shape
-img = img[height/2-100:height/2+100, width/2-100:width/2+100]
+img = cv2.imread("images/droneimg.png")
+
 line_detector = LineDetector()
 line_detector.update_image(img)
 center = line_detector.get_center()
-vector = line_detector.get_online_vector()
+#vector = line_detector.get_online_vector()
 print center
-print vector
-cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in vector])), [255, 0, 255], 3)
+#print vector
+#cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in vector])), [255, 0, 255], 3)
 
-cv2.imshow('frame', img)
+cv2.imshow('blue', line_detector.mask_blue)
+cv2.imshow('red', line_detector.mask_red)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
