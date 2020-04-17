@@ -7,7 +7,8 @@ UPPER_BLUE = np.array([255, 255, 190])
 LOWER_RED = np.array([0, 150, 150])
 UPPER_RED = np.array([10, 255, 255])
 
-def findCenter(lines):
+
+def find_center(lines):
     center_x = 0
     center_y = 0
 
@@ -22,15 +23,16 @@ def findCenter(lines):
     return center_x, center_y
 
 
-def isOnLine(cur_pos, lines):
+def is_on_line(cur_pos, lines):
     for line in lines:
-        d = getDistanceToLine(cur_pos, line)
+        d = get_distance_to_line(cur_pos, line)
         if d < DISTANCE_TO_LINE_CONST:
             return True
 
     return False
 
-def getDistanceToLine(cur_pos, line):
+
+def get_distance_to_line(cur_pos, line):
     x1, y1, x2, y2 = line[0]
     p1 = np.asarray((x1, y1))
     p2 = np.asarray((x2, y2))
@@ -38,11 +40,12 @@ def getDistanceToLine(cur_pos, line):
     d = np.linalg.norm(np.cross(p2 - p1, p1 - p3)) / np.linalg.norm(p2 - p1)
     return d
 
-def getClosestLine(cur_pos, lines):
+
+def get_closest_line(cur_pos, lines):
     cur_min = 1000000000
     min_line = None
     for line in lines:
-        d = getDistanceToLine(cur_pos, line)
+        d = get_distance_to_line(cur_pos, line)
         if d < cur_min:
             cur_min = d
             min_line = line
@@ -50,8 +53,8 @@ def getClosestLine(cur_pos, lines):
     return min_line
 
 
-def getClosestPointOnLine(cur_pos, lines):
-    min_line = getClosestLine(cur_pos, lines)
+def get_closest_point_on_line(cur_pos, lines):
+    min_line = get_closest_line(cur_pos, lines)
     x3, y3 = cur_pos
     x1, y1, x2, y2 = min_line[0]
     dx = x2 - x1
@@ -60,17 +63,19 @@ def getClosestPointOnLine(cur_pos, lines):
     nx = ((x3 - x1) * dx + (y3 - y1) * dy) / d2
     return [dx * nx + x1, dy * nx + y1]
 
-def getLines(result):
+
+def get_lines(result):
     edges = cv2.Canny(result, 100, 200)
     return cv2.HoughLinesP(edges, 1, np.pi / 180, 50, maxLineGap=10)
 
-def drawLines(lines, color):
+
+def draw_lines(lines, color):
     for line in lines:
         x1, y1, x2, y2 = line[0]
         cv2.line(img, (x1, y1), (x2, y2), color, 5)
 
 
-def getCenters(mask):
+def get_centers(mask):
     _, thresh = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
     moments = cv2.moments(thresh)
     # calculate x,y coordinate of center
@@ -78,7 +83,8 @@ def getCenters(mask):
     cy = int(moments["m01"] / moments["m00"])
     return [cx, cy]
 
-def getNextPosVector(red_center, blue_center):
+
+def get_next_pos_vector(red_center, blue_center):
     vector = np.subtract(red_center, blue_center)
     perp = np.cross(vector + [0], [0, 0, -1])[:2]
     return perp
@@ -93,19 +99,20 @@ class LineDetector:
         self.result_blue = None
         self.result_red = None
 
-    def updateImage(self, new_img):
+    def update_image(self, new_img):
         self.cur_img = new_img
-        height, width, channels = img.shape
+        height, width, channels = new_img.shape
         self.center = [width / 2, height / 2]
-        self.applyMask()
+        self.apply_mask()
 
-    def applyMask(self):
+    def apply_mask(self):
+        hsv = cv2.cvtColor(self.cur_img, cv2.COLOR_BGR2HSV)
         # ========== Blue Mask ===========================
         # preparing the mask to overlay
         self.mask_blue = cv2.inRange(hsv, LOWER_BLUE, UPPER_BLUE)
         # The black region in the mask has the value of 0,
         # so when multiplied with original image removes all non-blue regions
-        self.result_blue = cv2.bitwise_and(self.cur_img, self.cur_img , mask=self.mask_blue)
+        self.result_blue = cv2.bitwise_and(self.cur_img, self.cur_img, mask=self.mask_blue)
 
         # ========== Red Mask ===========================
         # preparing the mask to overlay
@@ -114,19 +121,19 @@ class LineDetector:
         # so when multiplied with original image removes all non-red regions
         self.result_red = cv2.bitwise_and(self.cur_img, self.cur_img, mask=self.mask_red)
 
-    def getOnlineVector(self):
+    def get_online_vector(self):
         # Maintain position on line with cropped image
-        red_centers = getCenters(self.mask_red)
-        blue_centers = getCenters(self.mask_blue)
+        red_centers = get_centers(self.mask_red)
+        blue_centers = get_centers(self.mask_blue)
 
         # Get and return perpendicular vector
-        return getNextPosVector(red_centers, blue_centers)
+        return get_next_pos_vector(red_centers, blue_centers)
 
-    def getVectorToLine(self):
-        blue_lines = getLines(self.result_blue)
-        red_lines = getLines(self.result_red)
-        closest_blue = getClosestPointOnLine(self.center, blue_lines)
-        closest_red = getClosestPointOnLine(self.center, red_lines)
+    def get_vector_to_line(self):
+        blue_lines = get_lines(self.result_blue)
+        red_lines = get_lines(self.result_red)
+        closest_blue = get_closest_point_on_line(self.center, blue_lines)
+        closest_red = get_closest_point_on_line(self.center, red_lines)
         dist_blue = np.linalg.norm(np.subtract(self.center, closest_blue))
         dist_red = np.linalg.norm(np.subtract(self.center, closest_red))
 
@@ -134,20 +141,36 @@ class LineDetector:
         if dist_blue > dist_red:
             closest = closest_red
 
-        return np.subtract(center, closest)
+        return np.subtract(self.center, closest)
+
+    def get_center(self):
+        return self.center
 
 
 
 
 img = cv2.imread("images/double_line.jpeg")
 height, width, channels = img.shape
-
-# Cropping Image
 img = img[height/2-100:height/2+100, width/2-100:width/2+100]
-height, width, channels = img.shape
-center = [width/2, height/2]
+line_detector = LineDetector()
+line_detector.update_image(img)
+center = line_detector.get_center()
+vector = line_detector.get_online_vector()
+print center
+print vector
+cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in vector])), [255, 0, 255], 3)
 
-hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+cv2.imshow('frame', img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+
+# # Cropping Image
+# img = img[height/2-100:height/2+100, width/2-100:width/2+100]
+# height, width, channels = img.shape
+# center = [width/2, height/2]
+#
+# hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
 
 
@@ -176,26 +199,22 @@ hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 # Get on the line with uncropped image
 
 
-# Maintain position on line with cropped image
-red_centers = getCenters(mask_red)
-blue_centers = getCenters(mask_blue)
-
-# Get perpendicular vector
-
-nextPos = getNextPosVector(red_centers, blue_centers)
-
-print center
-print tuple(np.add(center, [int(i * 10) for i in nextPos]))
-
-cv2.circle(img, tuple(red_centers), 6, [255, 0, 255], 6)
-cv2.circle(img, tuple(blue_centers), 6, [255, 0, 255], 6)
-cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i * 30) for i in nextPos])), [255, 0, 255], 3)
+# # Maintain position on line with cropped image
+# red_centers = get_centers(mask_red)
+# blue_centers = get_centers(mask_blue)
+#
+# # Get perpendicular vector
+#
+# nextPos = get_next_pos_vector(red_centers, blue_centers)
+#
+# print center
+# print tuple(np.add(center, [int(i * 10) for i in nextPos]))
+#
+# cv2.circle(img, tuple(red_centers), 6, [255, 0, 255], 6)
+# cv2.circle(img, tuple(blue_centers), 6, [255, 0, 255], 6)
+# cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i * 30) for i in nextPos])), [255, 0, 255], 3)
 
 # Check if on line
 
-
-cv2.imshow('frame', img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
 
 
