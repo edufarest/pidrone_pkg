@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 
 DISTANCE_TO_LINE_CONST = 3
-LOWER_BLUE = np.array([30, 150, 60])
-UPPER_BLUE = np.array([255, 255, 190])
-LOWER_RED = np.array([170, 50, 50])
-UPPER_RED = np.array([180, 255, 190])
+LOWER_BLUE = np.array([50, 150, 60])
+UPPER_BLUE = np.array([130, 255, 190])
+LOWER_RED = np.array([150, 0, 0])
+UPPER_RED = np.array([190, 255, 190])
 
 
 def find_center(lines):
@@ -78,6 +78,9 @@ def draw_lines(lines, color):
 def get_centers(mask):
     _, thresh = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
     moments = cv2.moments(thresh)
+    if moments["m00"] == 0:
+        return [0, 0]
+
     # calculate x,y coordinate of center
     cx = int(moments["m10"] / moments["m00"])
     cy = int(moments["m01"] / moments["m00"])
@@ -126,6 +129,9 @@ class LineDetector:
         red_centers = get_centers(self.mask_red)
         blue_centers = get_centers(self.mask_blue)
 
+        if red_centers == False or blue_centers == False:
+            return [0, 0]
+
         # Get and return perpendicular vector
         return get_next_pos_vector(red_centers, blue_centers)
 
@@ -146,23 +152,66 @@ class LineDetector:
     def get_center(self):
         return self.center
 
+    def get_red_center(self):
+        return get_centers(self.mask_red)
+
+    def get_blue_center(self):
+        return get_centers(self.mask_blue)
 
 
 
-img = cv2.imread("images/droneimg.png")
 
-line_detector = LineDetector()
-line_detector.update_image(img)
-center = line_detector.get_center()
-#vector = line_detector.get_online_vector()
-print center
-#print vector
-#cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in vector])), [255, 0, 255], 3)
+video = cv2.VideoCapture('images/video2.mp4')
+# Check if camera opened successfully
 
-cv2.imshow('blue', line_detector.mask_blue)
-cv2.imshow('red', line_detector.mask_red)
-cv2.waitKey(0)
+if not video.isOpened():
+  print "Error opening video stream or file"
+
+while video.isOpened():
+    ret, img = video.read()
+
+    if ret:
+        height, width, channels = img.shape
+        img = img[height/2-100:height/2+100, width/2-100:width/2+100]
+        line_detector = LineDetector()
+        line_detector.update_image(img)
+        center = line_detector.get_center()
+        vector = line_detector.get_online_vector()
+        print center
+        print vector
+        cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in vector])), [255, 0, 255], 3)
+        cv2.circle(img, tuple(line_detector.get_red_center()), 3, [255, 0, 255], 3)
+        cv2.circle(img, tuple(line_detector.get_blue_center()), 3, [255, 0, 255], 3)
+        cv2.imshow('blue', line_detector.mask_blue)
+        cv2.imshow('red', line_detector.mask_red)
+        cv2.imshow('frame', img)
+        if cv2.waitKey(20) & 0xFF == ord('q'):
+            break
+    else:
+        break
+
+video.release()
 cv2.destroyAllWindows()
+
+
+# img = cv2.imread("images/droneimg.png")
+# height, width, channels = img.shape
+# img = img[height/2-100:height/2+100, width/2-100:width/2+100]
+# line_detector = LineDetector()
+# line_detector.update_image(img)
+# center = line_detector.get_center()
+# vector = line_detector.get_online_vector()
+# print center
+# print vector
+# cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in vector])), [255, 0, 255], 3)
+# cv2.circle(img, tuple(line_detector.get_red_center()), 3, [255, 0, 255], 3)
+# cv2.circle(img, tuple(line_detector.get_blue_center()), 3, [255, 0, 255], 3)
+#
+# cv2.imshow('frame', img)
+# cv2.imshow('blue', line_detector.mask_blue)
+# cv2.imshow('red', line_detector.mask_red)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
 
 
 # # Cropping Image
