@@ -179,7 +179,7 @@ video = cv2.VideoCapture('images/video3.mp4')
 # Check if camera opened successfully
 
 if not video.isOpened():
-  print("Error opening video stream or file")
+  print "Error opening video stream or file"
 
 while video.isOpened():
     ret, img = video.read()
