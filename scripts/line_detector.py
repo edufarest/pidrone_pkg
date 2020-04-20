@@ -180,11 +180,19 @@ class LineDetector:
 
 
 
-video = cv2.VideoCapture('images/video3.mp4')
-# Check if camera opened successfully
+# video = cv2.VideoCapture('images/video3.mp4')
+# # Check if camera opened successfully
+#
+# if not video.isOpened():
+#   print "Error opening video stream or file"
 
-if not video.isOpened():
-  print "Error opening video stream or file"
+# Subscribe to /pidrone/picamera/image_raw
+
+rospy.Subscriber('/pidrone/picamera/image_raw', Image, track_lines)
+
+def track_lines(img_data):
+    print "Got Image data: "
+    print img_data
 
 while video.isOpened():
     ret, img = video.read()
