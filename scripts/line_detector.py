@@ -191,57 +191,52 @@ class LineDetector:
 
 # Subscribe to /pidrone/picamera/image_raw
 
+image_pub = rospy.Publisher("/pidrone/picamera/image_vector", Image, queue_size=1, tcp_nodelay=False)
+
 
 def track_lines(img_data):
-    print "Got Image data: "
-    print img_data
+    bridge = CvBridge()
+    img = bridge.imgmsg_to_cv2(img_data, desired_encoding='passthrough')
+
+    height, width, channels = img.shape
+    img = img[int(height / 2 - 100):int(height / 2 + 100), int(width / 2 - 100):int(width / 2 + 100)]
+    line_detector = LineDetector()
+    line_detector.update_image(img)
+    center = line_detector.get_center()
+    forward_vec = line_detector.get_online_vector()
+
+    # print center
+    # print vector
+    redLines = get_lines(line_detector.result_red)
+    blueLines = get_lines(line_detector.result_blue)
+    # draw_lines(redLines, [0, 0, 255])
+    # draw_lines(blueLines, [255, 0, 0])
+
+    all_lines = list(redLines) + list(blueLines)
+    if len(all_lines):
+        all_vecs = list(map(line2vec, all_lines))
+        all_vecs_oriented = list(map(lambda v: np.multiply(np.dot(forward_vec, v), v), all_vecs))
+        all_angles = list(map(vec2ang, all_vecs_oriented))
+
+        angle = np.mean(all_angles)
+        angle_vector = [20 * math.cos(angle), 20 * math.sin(angle)]
+
+        cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in angle_vector])), [255, 80, 255], 3)
+        # cv2.arrowedLine(img, tuple(center), tuple(np.add(center, forward_vec)), [128, 255, 128], 3)
+        # cv2.circle(img, tuple(line_detector.get_red_center()), 3, [255, 0, 255], 3)
+        # cv2.circle(img, tuple(line_detector.get_blue_center()), 3, [255, 0, 255], 3)
+        # cv2.circle(img, tuple(find_center(redLines)), 3, [255, 0, 255], 3)
+        # cv2.circle(img, tuple(map(int, find_center(blueLines))), 3, [255, 0, 255], 3)
+    # cv2.imshow('blue', line_detector.mask_blue)
+    # cv2.imshow('red', line_detector.mask_red)
+    # cv2.imshow('frame', img)
+
+    image_message = bridge.cv2_to_imgmsg(img, encoding="passthrough")
+    image_pub.publish(image_message)
+
 
 rospy.Subscriber('/pidrone/picamera/image_raw', Image, track_lines)
 rospy.spin();
-
-while False and video.isOpened():
-    ret, img = video.read()
-
-    if ret:
-        height, width, channels = img.shape
-        img = img[int(height/2-100):int(height/2+100), int(width/2-100):int(width/2+100)]
-        line_detector = LineDetector()
-        line_detector.update_image(img)
-        center = line_detector.get_center()
-        forward_vec = line_detector.get_online_vector()
-
-        # print center
-        # print vector
-        redLines = get_lines(line_detector.result_red)
-        blueLines = get_lines(line_detector.result_blue)
-        # draw_lines(redLines, [0, 0, 255])
-        # draw_lines(blueLines, [255, 0, 0])
-
-        all_lines = list(redLines) + list(blueLines)
-        if len(all_lines):
-            all_vecs = list(map(line2vec, all_lines))
-            all_vecs_oriented = list(map(lambda v: np.multiply(np.dot(forward_vec, v), v), all_vecs))
-            all_angles = list(map(vec2ang, all_vecs_oriented))
-
-            angle = np.mean(all_angles)
-            angle_vector = [20 * math.cos(angle), 20 * math.sin(angle)]
-
-            cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in angle_vector])), [255, 80, 255], 3)
-            # cv2.arrowedLine(img, tuple(center), tuple(np.add(center, forward_vec)), [128, 255, 128], 3)
-            # cv2.circle(img, tuple(line_detector.get_red_center()), 3, [255, 0, 255], 3)
-            # cv2.circle(img, tuple(line_detector.get_blue_center()), 3, [255, 0, 255], 3)
-            # cv2.circle(img, tuple(find_center(redLines)), 3, [255, 0, 255], 3)
-            # cv2.circle(img, tuple(map(int, find_center(blueLines))), 3, [255, 0, 255], 3)
-        cv2.imshow('blue', line_detector.mask_blue)
-        cv2.imshow('red', line_detector.mask_red)
-        cv2.imshow('frame', img)
-        if cv2.waitKey(10) & 0xFF == ord('q'):
-            break
-    else:
-        break
-
-#video.release()
-cv2.destroyAllWindows()
 
 
 # img = cv2.imread("images/droneimg.png")
