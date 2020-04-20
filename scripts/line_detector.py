@@ -196,7 +196,7 @@ image_pub = rospy.Publisher("/pidrone/picamera/image_vector", Image, queue_size=
 
 def track_lines(img_data):
     bridge = CvBridge()
-    img = bridge.imgmsg_to_cv2(img_data, desired_encoding='passthrough')
+    img = bridge.imgmsg_to_cv2(img_data, desired_encoding='bgr8')
 
     height, width, channels = img.shape
     img = img[int(height / 2 - 100):int(height / 2 + 100), int(width / 2 - 100):int(width / 2 + 100)]
@@ -231,7 +231,7 @@ def track_lines(img_data):
     # cv2.imshow('red', line_detector.mask_red)
     # cv2.imshow('frame', img)
 
-    image_message = bridge.cv2_to_imgmsg(img, encoding="passthrough")
+    image_message = bridge.cv2_to_imgmsg(img, encoding="bgr8")
     image_pub.publish(image_message)
 
 
