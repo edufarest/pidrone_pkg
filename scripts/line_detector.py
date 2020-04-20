@@ -200,9 +200,6 @@ def track_lines(img_data):
 
     bridge = CvBridge()
     img = bridge.imgmsg_to_cv2(img_data, desired_encoding='bgr8')
-
-    print "converted image"
-
     height, width, channels = img.shape
     img = img[int(height / 2 - 100):int(height / 2 + 100), int(width / 2 - 100):int(width / 2 + 100)]
     line_detector = LineDetector()
@@ -243,7 +240,6 @@ def track_lines(img_data):
 
     image_message = bridge.cv2_to_imgmsg(img, encoding="bgr8")
 
-    print "encoded image"
 
     image_pub.publish(image_message)
 
