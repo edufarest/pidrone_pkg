@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import cv2
 import numpy as np
 import math
@@ -15,6 +17,7 @@ UPPER_RED = np.array([190, 255, 190])
 LOWER_RED_2 = np.array([0, 0, 0])
 UPPER_RED_2 = np.array([20, 255, 190])
 
+rospy.init_node("line_detector");
 
 def find_center(lines):
     if lines is None:
@@ -188,13 +191,15 @@ class LineDetector:
 
 # Subscribe to /pidrone/picamera/image_raw
 
-rospy.Subscriber('/pidrone/picamera/image_raw', Image, track_lines)
 
 def track_lines(img_data):
     print "Got Image data: "
     print img_data
 
-while video.isOpened():
+rospy.Subscriber('/pidrone/picamera/image_raw', Image, track_lines)
+rospy.spin();
+
+while False and video.isOpened():
     ret, img = video.read()
 
     if ret:
@@ -235,7 +240,7 @@ while video.isOpened():
     else:
         break
 
-video.release()
+#video.release()
 cv2.destroyAllWindows()
 
 
