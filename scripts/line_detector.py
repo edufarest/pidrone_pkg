@@ -195,8 +195,13 @@ image_pub = rospy.Publisher("/pidrone/picamera/image_vector", Image, queue_size=
 
 
 def track_lines(img_data):
+    
+    print "Processing Image"
+
     bridge = CvBridge()
-    img = bridge.imgmsg_to_cv2(img_data, desired_encoding='passthrough')
+    img = bridge.imgmsg_to_cv2(img_data, desired_encoding='bgr8')
+
+    print "converted image"
 
     height, width, channels = img.shape
     img = img[int(height / 2 - 100):int(height / 2 + 100), int(width / 2 - 100):int(width / 2 + 100)]
@@ -214,6 +219,9 @@ def track_lines(img_data):
 
     all_lines = list(redLines) + list(blueLines)
     if len(all_lines):
+
+        print "Found lines"
+
         all_vecs = list(map(line2vec, all_lines))
         all_vecs_oriented = list(map(lambda v: np.multiply(np.dot(forward_vec, v), v), all_vecs))
         all_angles = list(map(vec2ang, all_vecs_oriented))
@@ -231,11 +239,20 @@ def track_lines(img_data):
     # cv2.imshow('red', line_detector.mask_red)
     # cv2.imshow('frame', img)
 
-    image_message = bridge.cv2_to_imgmsg(img, encoding="passthrough")
+    print "Processed image"
+
+    image_message = bridge.cv2_to_imgmsg(img, encoding="bgr8")
+
+    print "encoded image"
+
     image_pub.publish(image_message)
+
+    print "pusblished image"
 
 
 rospy.Subscriber('/pidrone/picamera/image_raw', Image, track_lines)
+# try subscribing to itself to force publishing
+rospy.Subscriber('/pidrone/picamera/image_vector', Image, None)
 rospy.spin();
 
 
