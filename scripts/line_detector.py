@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import math
+import time
 
 DISTANCE_TO_LINE_CONST = 3
 LOWER_BLUE = np.array([85, 0, 0])
@@ -203,10 +204,8 @@ while video.isOpened():
         if len(all_lines):
             all_vecs = list(map(line2vec, all_lines))
             all_vecs_oriented = list(map(lambda v: np.multiply(np.dot(forward_vec, v), v), all_vecs))
-            all_angles = list(map(vec2ang, all_vecs_oriented))
 
-            angle = np.mean(all_angles)
-            angle_vector = [20 * math.cos(angle), 20 * math.sin(angle)]
+            angle_vector = [np.mean(p) for p in np.transpose(all_vecs_oriented)]
 
             cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in angle_vector])), [255, 80, 255], 3)
             # cv2.arrowedLine(img, tuple(center), tuple(np.add(center, forward_vec)), [128, 255, 128], 3)
