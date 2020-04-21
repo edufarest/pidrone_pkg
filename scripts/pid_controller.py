@@ -332,7 +332,7 @@ class PIDController(object):
 
 def main(ControllerClass):
     # Verbosity between 0 and 2, 2 is most verbose
-    verbose = 0
+    verbose = 2
 
     # ROS Setup
     ###########
