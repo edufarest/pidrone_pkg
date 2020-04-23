@@ -7,6 +7,7 @@ import rospy
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
+from geometry_msgs.msg import Pose
 
 
 DISTANCE_TO_LINE_CONST = 3
@@ -193,6 +194,8 @@ class LineDetector:
 
 image_pub = rospy.Publisher("/pidrone/picamera/image_vector", Image, queue_size=1, tcp_nodelay=False)
 
+obj_pose_pub = rospy.Publisher('/pidrone/desired/pose', Pose, queue_size=1)
+
 
 def track_lines(img_data):
     
@@ -224,13 +227,17 @@ def track_lines(img_data):
         all_angles = list(map(vec2ang, all_vecs_oriented))
 
         angle = np.mean(all_angles)
-        angle_vector = [20 * math.cos(angle), 20 * math.sin(angle)]
+        angle_vector = [math.cos(angle), math.sin(angle)]
 
         # cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in angle_vector])), [255, 80, 255], 3)
 
         print angle
         print angle_vector
 
+        obj_pose = Pose()
+        obj_pose.position.x = angle_vector[0]
+        obj_pose.position.y = angle_vector[1]
+        obj_pose_pub.publish(obj_pose)
         # cv2.arrowedLine(img, tuple(center), tuple(np.add(center, forward_vec)), [128, 255, 128], 3)
         # cv2.circle(img, tuple(line_detector.get_red_center()), 3, [255, 0, 255], 3)
         # cv2.circle(img, tuple(line_detector.get_blue_center()), 3, [255, 0, 255], 3)
