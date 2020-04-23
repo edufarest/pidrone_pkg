@@ -226,7 +226,11 @@ def track_lines(img_data):
         angle = np.mean(all_angles)
         angle_vector = [20 * math.cos(angle), 20 * math.sin(angle)]
 
-        cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in angle_vector])), [255, 80, 255], 3)
+        # cv2.arrowedLine(img, tuple(center), tuple(np.add(center, [int(i) for i in angle_vector])), [255, 80, 255], 3)
+
+        print angle
+        print angle_vector
+
         # cv2.arrowedLine(img, tuple(center), tuple(np.add(center, forward_vec)), [128, 255, 128], 3)
         # cv2.circle(img, tuple(line_detector.get_red_center()), 3, [255, 0, 255], 3)
         # cv2.circle(img, tuple(line_detector.get_blue_center()), 3, [255, 0, 255], 3)
